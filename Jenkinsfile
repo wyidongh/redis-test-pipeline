@@ -195,46 +195,46 @@ print(f'{passed}/{total}')
             rm -rf ${TEST_WORKSPACE}
             docker rm -f redis-test-${BUILD_NUMBER} 2>/dev/null || true
             '''
+            
+            // 发送邮件通知（放在 always 里确保无论成败都发）
+            script {
+                def status = currentBuild.result ?: 'SUCCESS'
+                def statusIcon = status == 'SUCCESS' ? '✅' : status == 'UNSTABLE' ? '⚠️' : '❌'
+                
+                emailext(
+                    subject: "${statusIcon} Redis 集成测试 [${env.TARGET_VERSION}] - ${status}",
+                    to: "${params.NOTIFY_EMAILS}",
+                    body: """
+                    <h2>Redis 集成测试报告</h2>
+                    <table border="1" cellpadding="5">
+                        <tr><td><b>构建版本</b></td><td>${env.TARGET_VERSION ?: 'latest'}</td></tr>
+                        <tr><td><b>测试状态</b></td><td>${status}</td></tr>
+                        <tr><td><b>构建链接</b></td><td><a href="${BUILD_URL}">${BUILD_URL}</a></td></tr>
+                    </table>
+                    """,
+                    attachLog: true,
+                    attachmentsPattern: 'test-reports/*.html'
+                )
+            }
         }
         
         success {
-            script {
-                env.TEST_STATUS = "✅ 通过"
+            script { 
+                currentBuild.description = "Redis ${env.TARGET_VERSION} | ✅ 通过"
             }
         }
         
         unstable {
-            script {
-                env.TEST_STATUS = "⚠️ 不稳定"
+            script { 
+                currentBuild.description = "Redis ${env.TARGET_VERSION} | ⚠️ 不稳定"
             }
         }
         
         failure {
-            script {
-                env.TEST_STATUS = "❌ 失败"
+            script { 
+                currentBuild.description = "Redis ${env.TARGET_VERSION} | ❌ 失败"
             }
         }
-        
-        always {
-            // 发送邮件通知
-            emailext(
-                subject: "${env.TEST_STATUS} - Redis 集成测试报告 [${env.TARGET_VERSION}]",
-                to: "${params.NOTIFY_EMAILS}",
-                body: """
-                <h2>Redis 集成测试报告</h2>
-                
-                <table border="1" cellpadding="5">
-                    <tr><td><b>构建版本</b></td><td>${env.TARGET_VERSION}</td></tr>
-                    <tr><td><b>测试状态</b></td><td>${env.TEST_STATUS}</td></tr>
-                    <tr><td><b>测试结果</b></td><td>${env.TEST_SUMMARY}</td></tr>
-                    <tr><td><b>构建链接</b></td><td><a href="${BUILD_URL}">${BUILD_URL}</a></td></tr>
-                </table>
-                
-                <p>详细报告请查看构建附件。</p>
-                """,
-                attachLog: true,
-                attachmentsPattern: 'test-reports/*.html'
-            )
-        }
     }
+
 }
