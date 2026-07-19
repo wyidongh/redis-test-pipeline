@@ -23,7 +23,6 @@ class RedisServer:
         if self.process is not None:
             return self
             
-        # 验证二进制文件存在
         if not os.path.exists(self.redis_server_path):
             raise RuntimeError(f"Redis server not found: {self.redis_server_path}")
             
@@ -47,17 +46,14 @@ class RedisServer:
             stderr=subprocess.PIPE
         )
         
-        # 等待启动
         time.sleep(2)
         
-        # 验证进程还在运行
         if self.process.poll() is not None:
             stdout, stderr = self.process.communicate()
             raise RuntimeError(
                 f"Redis server exited early. stdout: {stdout.decode()}, stderr: {stderr.decode()}"
             )
         
-        # 验证连接
         try:
             client = self.get_client()
             client.ping()
@@ -87,8 +83,7 @@ class RedisServer:
             password=self.password,
             db=db,
             decode_responses=True,
-            socket_connect_timeout=5,
-            socket_connect_retry=3
+            socket_connect_timeout=5
         )
 
 
