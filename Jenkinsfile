@@ -65,35 +65,40 @@ pipeline {
             }
         }
 
-        stage("Download Artifact") {
-            steps {
-                script {
-                    // 确定要下载的版本
-                    def version = params.BUILD_VERSION ?: sh(
-                        script: "ssh dong2@${params.ARTIFACT_HOST} 'readlink ${params.ARTIFACT_DIR}/latest.tar.gz' | sed 's/latest.tar.gz/redis-&/'",
-                        returnStdout: true
-                    ).trim()
-                    
-                    if (!params.BUILD_VERSION) {
-                        env.TARGET_VERSION = version.replace('redis-', '').replace('.tar.gz', '')
-                    } else {
-                        env.TARGET_VERSION = params.BUILD_VERSION
-                    }
-                    
-                    echo "Testing Redis version: ${env.TARGET_VERSION}"
-                }
-                
-                // 下载安装包
-                sh '''
-                scp dong2@${ARTIFACT_HOST}:${ARTIFACT_DIR}/redis-${TARGET_VERSION}.tar.gz ${TEST_WORKSPACE}/
-                scp dong2@${ARTIFACT_HOST}:${ARTIFACT_DIR}/redis-${TARGET_VERSION}.tar.gz.md5 ${TEST_WORKSPACE}/
-                
-                # 校验 MD5
-                cd ${TEST_WORKSPACE}
-                md5sum -c redis-${TARGET_VERSION}.tar.gz.md5
-                '''
-            }
-        }
+
+	stage("Download Artifact") {
+	    steps {
+		sshagent(credentials: ['dong2-ssh-key']) {
+		    script {
+			def version = params.BUILD_VERSION ?: sh(
+			    script: "ssh -o StrictHostKeyChecking=no dong2@${params.ARTIFACT_HOST} 'readlink ${params.ARTIFACT_DIR}/latest.tar.gz' | sed 's/latest.tar.gz/redis-&/'",
+			    returnStdout: true
+			).trim()
+			
+			if (!params.BUILD_VERSION) {
+			    env.TARGET_VERSION = version.replace('redis-', '').replace('.tar.gz', '')
+			} else {
+			    env.TARGET_VERSION = params.BUILD_VERSION
+			}
+			
+			echo "Testing Redis version: ${env.TARGET_VERSION}"
+		    }
+		    
+		    sh '''
+		    scp -o StrictHostKeyChecking=no \
+			dong2@${ARTIFACT_HOST}:${ARTIFACT_DIR}/redis-${TARGET_VERSION}.tar.gz \
+			${TEST_WORKSPACE}/
+		    scp -o StrictHostKeyChecking=no \
+			dong2@${ARTIFACT_HOST}:${ARTIFACT_DIR}/redis-${TARGET_VERSION}.tar.gz.md5 \
+			${TEST_WORKSPACE}/
+		    
+		    cd ${TEST_WORKSPACE}
+		    md5sum -c redis-${TARGET_VERSION}.tar.gz.md5
+		    '''
+		}
+	    }
+	}
+
 
         stage("Prepare Test Environment") {
             steps {
