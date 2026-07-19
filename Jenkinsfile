@@ -136,13 +136,11 @@ pipeline {
 		    --junitxml=/test-reports/junit.xml)
 		
 		# 复制 Redis 二进制到容器内的 /usr/local/bin/
+		# docker cp 会保留文件权限，不需要 chmod
 		docker cp ${TEST_WORKSPACE}/redis-install/bin/redis-server ${CID}:/usr/local/bin/redis-server
 		docker cp ${TEST_WORKSPACE}/redis-install/bin/redis-cli ${CID}:/usr/local/bin/redis-cli
 		
-		# 确保可执行
-		docker exec ${CID} chmod +x /usr/local/bin/redis-server /usr/local/bin/redis-cli
-		
-		# 启动并执行测试
+		# 启动并执行测试（-a 附加到输出）
 		docker start -a ${CID}
 		
 		# 获取退出码
@@ -156,6 +154,7 @@ pipeline {
 		'''
 	    }
 	}
+
 
         stage("Collect Results") {
             steps {
