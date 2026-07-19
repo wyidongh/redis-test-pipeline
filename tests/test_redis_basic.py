@@ -36,7 +36,7 @@ class TestRedisBasic:
     def test_set_operations(self, redis_client):
         """测试集合操作"""
         redis_client.sadd("tags", "python", "redis", "database")
-        assert redis_client.sismember("tags", "redis") is True
+        assert redis_client.sismember("tags", "redis") == 1
         assert redis_client.scard("tags") == 3
         
     def test_zset_operations(self, redis_client):
