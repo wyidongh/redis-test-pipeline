@@ -9,7 +9,6 @@ class RedisServer:
     """管理 Redis 服务器生命周期"""
     
     def __init__(self, redis_server_path=None):
-        # 从环境变量读取，或使用默认值
         self.redis_server_path = redis_server_path or os.environ.get(
             "REDIS_SERVER_PATH", 
             "/usr/local/bin/redis-server"
@@ -26,21 +25,7 @@ class RedisServer:
             
         # 验证二进制文件存在
         if not os.path.exists(self.redis_server_path):
-            # 尝试找其他可能的位置
-            alt_paths = [
-                "/usr/local/redis/bin/redis-server",
-                "/usr/bin/redis-server",
-                "redis-server"
-            ]
-            for path in alt_paths:
-                if os.path.exists(path):
-                    self.redis_server_path = path
-                    break
-            else:
-                raise RuntimeError(
-                    f"Redis server not found. Tried: {self.redis_server_path}, {alt_paths}. "
-                    f"Please set REDIS_SERVER_PATH environment variable."
-                )
+            raise RuntimeError(f"Redis server not found: {self.redis_server_path}")
             
         cmd = [
             self.redis_server_path,

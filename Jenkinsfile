@@ -119,34 +119,43 @@ pipeline {
 	}
 
 
-        stage("Run Tests") {
-            steps {
-                // 拉取测试代码
-                checkout scm  // 拉取 redis-test-pipeline 本身
-                
-                // 运行测试容器
-                sh '''
-                # 构建测试镜像（如果还没构建）
-                # docker build -t ${TEST_IMAGE} -f Dockerfile .
-                
-                # 运行测试
-		docker run --rm \
-		    --name redis-test-${BUILD_NUMBER} \
-		    -v ${WORKSPACE}/redis-bin:/usr/local/redis:ro \
+	stage("Run Tests") {
+	    steps {
+		checkout scm
+		
+		sh '''
+		# 创建临时容器（不启动）
+		CID=$(docker create \
 		    -v ${WORKSPACE}/tests:/tests \
 		    -v ${REPORT_DIR}:/test-reports \
-		    -e REDIS_SERVER_PATH=/usr/local/redis/redis-server \
-		    -e REDIS_CLI_PATH=/usr/local/redis/redis-cli \
 		    redis_test:1.0.0 \
 		    /tests \
 		    -v \
 		    --html=/test-reports/report.html \
 		    --self-contained-html \
-		    --junitxml=/test-reports/junit.xml
+		    --junitxml=/test-reports/junit.xml)
+		
+		# 复制 Redis 二进制到容器内的 /usr/local/bin/
+		docker cp ${TEST_WORKSPACE}/redis-install/bin/redis-server ${CID}:/usr/local/bin/redis-server
+		docker cp ${TEST_WORKSPACE}/redis-install/bin/redis-cli ${CID}:/usr/local/bin/redis-cli
+		
+		# 确保可执行
+		docker exec ${CID} chmod +x /usr/local/bin/redis-server /usr/local/bin/redis-cli
+		
+		# 启动并执行测试
+		docker start -a ${CID}
+		
+		# 获取退出码
+		EXIT_CODE=$(docker inspect ${CID} --format='{{.State.ExitCode}}')
+		
+		# 清理容器
+		docker rm ${CID}
+		
+		# 如果测试失败，让 Pipeline 感知
+		exit ${EXIT_CODE}
 		'''
-			}
-		}
-
+	    }
+	}
 
         stage("Collect Results") {
             steps {
