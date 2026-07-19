@@ -156,42 +156,44 @@ pipeline {
 	}
 
 
-        stage("Collect Results") {
-            steps {
-                // 收集测试报告
-                junit testResults: 'test-reports/junit.xml', allowEmptyResults: true
-                
-                // 归档报告
-                archiveArtifacts artifacts: 'test-reports/**', allowEmptyArchive: true
-                
-                // 生成摘要
-                script {
-                    def summary = sh(
-                        script: '''
-                        if [ -f test-reports/junit.xml ]; then
-                            python3 -c "
-import xml.etree.ElementTree as ET
-tree = ET.parse('test-reports/junit.xml')
-root = tree.getroot()
-total = int(root.get('tests', 0))
-failures = int(root.get('failures', 0))
-errors = int(root.get('errors', 0))
-skipped = int(root.get('skipped', 0))
-passed = total - failures - errors - skipped
-print(f'{passed}/{total}')
-"
-                        else
-                            echo "0/0"
-                        fi
-                        ''',
-                        returnStdout: true
-                    ).trim()
-                    
-                    env.TEST_SUMMARY = summary
-                    currentBuild.description = "Redis ${env.TARGET_VERSION} | Tests: ${summary}"
-                }
-            }
-        }
+
+	stage("Collect Results") {
+	    steps {
+		junit testResults: 'test-reports/junit.xml', allowEmptyResults: true
+		
+		script {
+		    // 用 shell 工具解析 XML，不依赖 python
+		    def summary = sh(
+			script: '''
+			if [ -f test-reports/junit.xml ]; then
+			    # 用 grep/sed 提取属性
+			    total=$(grep -o 'tests="[0-9]*"' test-reports/junit.xml | grep -o '[0-9]*')
+			    failures=$(grep -o 'failures="[0-9]*"' test-reports/junit.xml | grep -o '[0-9]*')
+			    errors=$(grep -o 'errors="[0-9]*"' test-reports/junit.xml | grep -o '[0-9]*')
+			    skipped=$(grep -o 'skipped="[0-9]*"' test-reports/junit.xml | grep -o '[0-9]*')
+			    
+			    total=${total:-0}
+			    failures=${failures:-0}
+			    errors=${errors:-0}
+			    skipped=${skipped:-0}
+			    
+			    passed=$((total - failures - errors - skipped))
+			    echo "${passed}/${total}"
+			else
+			    echo "0/0"
+			fi
+			''',
+			returnStdout: true
+		    ).trim()
+		    
+		    env.TEST_SUMMARY = summary
+		    currentBuild.description = "Redis ${env.TARGET_VERSION} | Tests: ${summary}"
+		}
+		
+		archiveArtifacts artifacts: 'test-reports/**', allowEmptyArchive: true
+	    }
+	}
+
     }
 
     post {
