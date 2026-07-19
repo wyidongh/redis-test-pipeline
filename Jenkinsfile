@@ -134,26 +134,25 @@ pipeline {
                 # docker build -t ${TEST_IMAGE} -f Dockerfile .
                 
                 # 运行测试
-                docker run --rm \
-                    --name redis-test-${BUILD_NUMBER} \
-                    -v ${TEST_WORKSPACE}/redis-install:/usr/local/redis:ro \
-                    -v ${WORKSPACE}/tests:/tests:ro \
-                    -v ${REPORT_DIR}:/test-reports \
-                    -e REDIS_SERVER_PATH=/usr/local/redis/bin/redis-server \
-                    -e REDIS_CLI_PATH=/usr/local/redis/bin/redis-cli \
-                    -e TEST_SUITE=${TEST_SUITE} \
-                    -e BUILD_VERSION=${TARGET_VERSION} \
-                    ${TEST_IMAGE} \
-                    -v \
-                    --html=/test-reports/report.html \
-                    --self-contained-html \
-                    --junitxml=/test-reports/junit.xml \
-                    -n auto \
-                    /tests/test_redis_${TEST_SUITE}.py \
-                    2>/tests || true
-                '''
-            }
-        }
+		docker run --rm \
+		    --name redis-test-${BUILD_NUMBER} \
+		    -v ${TEST_WORKSPACE}/redis-install:/usr/local/redis:ro \
+		    -v ${WORKSPACE}/tests:/tests \
+		    -v ${REPORT_DIR}:/test-reports \
+		    -e REDIS_SERVER_PATH=/usr/local/redis/bin/redis-server \
+		    -e REDIS_CLI_PATH=/usr/local/redis/bin/redis-cli \
+		    -e TEST_SUITE=${TEST_SUITE} \
+		    -e BUILD_VERSION=${TARGET_VERSION} \
+		    redis_test:1.0.0 \
+		    pytest /tests -v \
+		    --html=/test-reports/report.html \
+		    --self-contained-html \
+		    --junitxml=/test-reports/junit.xml \
+		    -n auto                
+		'''
+		}
+	}
+
 
         stage("Collect Results") {
             steps {
