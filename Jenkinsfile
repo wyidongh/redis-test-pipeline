@@ -100,28 +100,24 @@ pipeline {
 	}
 
 
-        stage("Prepare Test Environment") {
-            steps {
-                // 解压安装包，准备 Redis 二进制文件
-                sh '''
-                cd ${TEST_WORKSPACE}
-                tar xzf redis-${TARGET_VERSION}.tar.gz
-                
-                # 准备 Redis 服务器二进制（从 package/bin 或解压后的目录找）
-                mkdir -p redis-install/bin
-                cp package/bin/redis-server redis-install/bin/ 2>/dev/null || \
-                cp redis/src/redis-server redis-install/bin/ 2>/dev/null || \
-                find . -name redis-server -type f -exec cp {} redis-install/bin/ \
-                
-                cp package/bin/redis-cli redis-install/bin/ 2>/dev/null || \
-                cp redis/src/redis-cli redis-install/bin/ 2>/dev/null || \
-                find . -name redis-cli -type f -exec cp {} redis-install/bin/ \
-                
-                chmod +x redis-install/bin/*
-                ls -la redis-install/bin/
-                '''
-            }
-        }
+	stage("Prepare Test Environment") {
+	    steps {
+		sh '''
+		cd ${TEST_WORKSPACE}
+		tar xzf redis-${TARGET_VERSION}.tar.gz
+		
+		mkdir -p redis-install/bin
+		cp package/bin/redis-server redis-install/bin/
+		cp package/bin/redis-cli redis-install/bin/
+		chmod +x redis-install/bin/*
+		
+		# 同时复制到 workspace 下的目录（host 可见）
+		mkdir -p ${WORKSPACE}/redis-bin
+		cp redis-install/bin/* ${WORKSPACE}/redis-bin/
+		'''
+	    }
+	}
+
 
         stage("Run Tests") {
             steps {
@@ -136,11 +132,11 @@ pipeline {
                 # 运行测试
 		docker run --rm \
 		    --name redis-test-${BUILD_NUMBER} \
-		    -v ${TEST_WORKSPACE}/redis-install:/usr/local/redis:ro \
+		    -v ${WORKSPACE}/redis-bin:/usr/local/redis:ro \
 		    -v ${WORKSPACE}/tests:/tests \
 		    -v ${REPORT_DIR}:/test-reports \
-		    -e REDIS_SERVER_PATH=/usr/local/redis/bin/redis-server \
-		    -e REDIS_CLI_PATH=/usr/local/redis/bin/redis-cli \
+		    -e REDIS_SERVER_PATH=/usr/local/redis/redis-server \
+		    -e REDIS_CLI_PATH=/usr/local/redis/redis-cli \
 		    redis_test:1.0.0 \
 		    /tests \
 		    -v \
@@ -148,8 +144,8 @@ pipeline {
 		    --self-contained-html \
 		    --junitxml=/test-reports/junit.xml
 		'''
+			}
 		}
-	}
 
 
         stage("Collect Results") {
