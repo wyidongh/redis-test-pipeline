@@ -141,14 +141,12 @@ pipeline {
 		    -v ${REPORT_DIR}:/test-reports \
 		    -e REDIS_SERVER_PATH=/usr/local/redis/bin/redis-server \
 		    -e REDIS_CLI_PATH=/usr/local/redis/bin/redis-cli \
-		    -e TEST_SUITE=${TEST_SUITE} \
-		    -e BUILD_VERSION=${TARGET_VERSION} \
 		    redis_test:1.0.0 \
-		    pytest /tests -v \
+		    /tests \
+		    -v \
 		    --html=/test-reports/report.html \
 		    --self-contained-html \
-		    --junitxml=/test-reports/junit.xml \
-		    -n auto                
+		    --junitxml=/test-reports/junit.xml
 		'''
 		}
 	}
