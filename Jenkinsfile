@@ -106,11 +106,11 @@ pipeline {
                 mkdir -p redis-install/bin
                 cp package/bin/redis-server redis-install/bin/ 2>/dev/null || \
                 cp redis/src/redis-server redis-install/bin/ 2>/dev/null || \
-                find . -name redis-server -type f -exec cp {} redis-install/bin/ \;
+                find . -name redis-server -type f -exec cp {} redis-install/bin/ \
                 
                 cp package/bin/redis-cli redis-install/bin/ 2>/dev/null || \
                 cp redis/src/redis-cli redis-install/bin/ 2>/dev/null || \
-                find . -name redis-cli -type f -exec cp {} redis-install/bin/ \;
+                find . -name redis-cli -type f -exec cp {} redis-install/bin/ \
                 
                 chmod +x redis-install/bin/*
                 ls -la redis-install/bin/
