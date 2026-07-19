@@ -131,7 +131,7 @@ pipeline {
                 // 运行测试容器
                 sh '''
                 # 构建测试镜像（如果还没构建）
-                docker build -t ${TEST_IMAGE} -f Dockerfile.test .
+                # docker build -t ${TEST_IMAGE} -f Dockerfile .
                 
                 # 运行测试
                 docker run --rm \
