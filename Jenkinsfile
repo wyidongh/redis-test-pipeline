@@ -224,7 +224,6 @@ pipeline {
                     attachmentsPattern: 'test-reports/*.html'
                 )
             }
-            )
         }
         
         success {
