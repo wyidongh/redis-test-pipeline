@@ -13,7 +13,7 @@ pipeline {
         string(
             name: 'BUILD_VERSION',
             defaultValue: '',
-            description: '要测试的构建版本号（如 1.0.45-abc1234），留空则测试 latest'
+            description: '要测试的构建版本号（必填，如 1.0.49-f8ee3df）'
         )
         
         string(
@@ -104,25 +104,32 @@ pipeline {
 	stage("Download Artifact") {
 	    steps {
 		script {
-		    // 使用参数传入的版本号，不再默认 latest
-		    env.TARGET_VERSION = params.BUILD_VERSION
-		    if (!env.TARGET_VERSION) {
-			error "BUILD_VERSION parameter is required"
+		    // 必须传入 BUILD_VERSION 参数
+		    if (!params.BUILD_VERSION?.trim()) {
+			error "BUILD_VERSION parameter is required. Please specify the version to test (e.g., 1.0.49-f8ee3df)"
 		    }
+		    env.TARGET_VERSION = params.BUILD_VERSION.trim()
 		    echo "Testing Redis version: ${env.TARGET_VERSION}"
 		}
 		
-		sh '''
-		cd ${TEST_WORKSPACE}
-		
-		curl -o redis-${TARGET_VERSION}.tar.gz \
-		    "http://192.168.79.134:8081/repository/redis-releases/redis/${TARGET_VERSION}/redis-${TARGET_VERSION}.tar.gz"
+		withEnv([
+		    "NEXUS_URL=http://192.168.79.134:8081/repository/redis-releases",
+		    "TARGET_VERSION=${env.TARGET_VERSION}"
+		]) {
+		    sh '''
+		    cd ${TEST_WORKSPACE}
 		    
-		curl -o redis-${TARGET_VERSION}.tar.gz.md5 \
-		    "http://192.168.79.134:8081/repository/redis-releases/redis/${TARGET_VERSION}/redis-${TARGET_VERSION}.tar.gz.md5"
-		
-		md5sum -c redis-${TARGET_VERSION}.tar.gz.md5
-		'''
+		    # 下载制品
+		    curl -f -o redis-${TARGET_VERSION}.tar.gz \
+			"${NEXUS_URL}/redis/${TARGET_VERSION}/redis-${TARGET_VERSION}.tar.gz"
+			
+		    curl -f -o redis-${TARGET_VERSION}.tar.gz.md5 \
+			"${NEXUS_URL}/redis/${TARGET_VERSION}/redis-${TARGET_VERSION}.tar.gz.md5"
+		    
+		    # 校验 MD5
+		    md5sum -c redis-${TARGET_VERSION}.tar.gz.md5
+		    '''
+		}
 	    }
 	}
 
