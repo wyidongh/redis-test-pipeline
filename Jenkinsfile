@@ -54,6 +54,26 @@ pipeline {
     }
 
     stages {
+
+        // 在第一个 stage 前做校验
+        stage("Validate Parameters") {
+            steps {
+                script {
+                    if (!params.BUILD_VERSION?.trim()) {
+                        // 设置构建描述并立即失败
+                        currentBuild.description = "❌ 错误：BUILD_VERSION 参数必填"
+                        error "BUILD_VERSION 参数不能为空。请使用 'Build with Parameters' 并填写版本号。"
+                    }
+                    
+                    // 可选：校验版本号格式
+                    if (!(params.BUILD_VERSION ==~ /^\d+\.\d+\.\d+-[a-f0-9]{7}$/)) {
+                        currentBuild.description = "❌ 错误：BUILD_VERSION 格式不正确"
+                        error "BUILD_VERSION 格式应为：x.x.x-xxxxxxx（如 1.0.50-f8ee3df）"
+                    }
+                }
+            }
+	}
+
         stage("Clean Workspace") {
             steps {
                 cleanWs()
