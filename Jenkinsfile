@@ -205,7 +205,6 @@ pipeline {
             '''
             
             // 发送邮件通知（放在 always 里确保无论成败都发）
-            /*
 	    script {
                 def status = currentBuild.result ?: 'SUCCESS'
                 def statusIcon = status == 'SUCCESS' ? '✅' : status == 'UNSTABLE' ? '⚠️' : '❌'
@@ -225,11 +224,6 @@ pipeline {
                     attachmentsPattern: 'test-reports/*.html'
                 )
             }
-	    */
-            mail(
-            to: "${params.NOTIFY_EMAILS}",
-            subject: "Redis 测试 ${currentBuild.result} - ${env.TARGET_VERSION}",
-            body: "测试: ${env.TEST_SUMMARY}\n链接: ${BUILD_URL}"
             )
         }
         
