@@ -205,7 +205,7 @@ pipeline {
             '''
             
             // 发送邮件通知（放在 always 里确保无论成败都发）
-	    script {
+            script {
                 def status = currentBuild.result ?: 'SUCCESS'
                 def statusIcon = status == 'SUCCESS' ? '✅' : status == 'UNSTABLE' ? '⚠️' : '❌'
                 
@@ -217,15 +217,21 @@ pipeline {
                     <table border="1" cellpadding="5">
                         <tr><td><b>构建版本</b></td><td>${env.TARGET_VERSION ?: 'latest'}</td></tr>
                         <tr><td><b>测试状态</b></td><td>${status}</td></tr>
+                        <tr><td><b>测试结果</b></td><td>${env.TEST_SUMMARY}</td></tr>
                         <tr><td><b>构建链接</b></td><td><a href="${BUILD_URL}">${BUILD_URL}</a></td></tr>
                     </table>
                     """,
+                    mimeType: 'text/html',
                     attachLog: true,
-                    attachmentsPattern: 'test-reports/*.html'
+                    attachmentsPattern: 'test-reports/*.html',
+                    // 关键：显式指定 always 触发器
+                    recipientProviders: [developers()],
+                    // 或者直接用 to 参数，不加 recipientProviders
                 )
             }
         }
-        
+       
+ 
         success {
             script { 
                 currentBuild.description = "Redis ${env.TARGET_VERSION} | ✅ 通过"
