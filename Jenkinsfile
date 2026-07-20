@@ -42,7 +42,7 @@ pipeline {
         
         string(
             name: 'NOTIFY_EMAILS',
-            defaultValue: 'devops@company.com,qa@company.com',
+            defaultValue: 'wyidongh@icloud.com',
             description: '测试结果通知邮箱，逗号分隔'
         )
     }
