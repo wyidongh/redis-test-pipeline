@@ -104,7 +104,11 @@ pipeline {
 	stage("Download Artifact") {
 	    steps {
 		script {
-		    env.TARGET_VERSION = params.BUILD_VERSION ?: "latest"
+		    // 使用参数传入的版本号，不再默认 latest
+		    env.TARGET_VERSION = params.BUILD_VERSION
+		    if (!env.TARGET_VERSION) {
+			error "BUILD_VERSION parameter is required"
+		    }
 		    echo "Testing Redis version: ${env.TARGET_VERSION}"
 		}
 		
