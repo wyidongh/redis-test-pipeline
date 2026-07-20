@@ -209,24 +209,36 @@ pipeline {
                 def status = currentBuild.result ?: 'SUCCESS'
                 def statusIcon = status == 'SUCCESS' ? '✅' : status == 'UNSTABLE' ? '⚠️' : '❌'
                 
-                emailext(
-                    subject: "${statusIcon} Redis 集成测试 [${env.TARGET_VERSION}] - ${status}",
+                mail(
                     to: "${params.NOTIFY_EMAILS}",
+                    subject: "${statusIcon} Redis 集成测试 [${env.TARGET_VERSION}] - ${status}",
                     body: """
+                    <html>
+                    <body>
                     <h2>Redis 集成测试报告</h2>
-                    <table border="1" cellpadding="5">
-                        <tr><td><b>构建版本</b></td><td>${env.TARGET_VERSION ?: 'latest'}</td></tr>
-                        <tr><td><b>测试状态</b></td><td>${status}</td></tr>
-                        <tr><td><b>测试结果</b></td><td>${env.TEST_SUMMARY}</td></tr>
-                        <tr><td><b>构建链接</b></td><td><a href="${BUILD_URL}">${BUILD_URL}</a></td></tr>
+                    <table border="1" cellpadding="5" style="border-collapse: collapse;">
+                        <tr style="background: #f0f0f0;">
+                            <td><b>构建版本</b></td>
+                            <td>${env.TARGET_VERSION}</td>
+                        </tr>
+                        <tr>
+                            <td><b>测试状态</b></td>
+                            <td>${status}</td>
+                        </tr>
+                        <tr>
+                            <td><b>测试结果</b></td>
+                            <td>${env.TEST_SUMMARY}</td>
+                        </tr>
+                        <tr>
+                            <td><b>构建链接</b></td>
+                            <td><a href="${BUILD_URL}">${BUILD_URL}</a></td>
+                        </tr>
                     </table>
+                    </body>
+                    </html>
                     """,
                     mimeType: 'text/html',
-                    attachLog: true,
-                    attachmentsPattern: 'test-reports/*.html',
-                    // 关键：显式指定 always 触发器
-                    recipientProviders: [developers()],
-                    // 或者直接用 to 参数，不加 recipientProviders
+                    from: 'handong2030@gmail.com'
                 )
             }
         }
