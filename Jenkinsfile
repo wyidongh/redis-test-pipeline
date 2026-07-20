@@ -65,7 +65,7 @@ pipeline {
             }
         }
 
-
+	/*
 	stage("Download Artifact") {
 	    steps {
 		sshagent(credentials: ['dong2-ssh-key']) {
@@ -96,6 +96,29 @@ pipeline {
 		    md5sum -c redis-${TARGET_VERSION}.tar.gz.md5
 		    '''
 		}
+	    }
+	}
+	*/
+
+
+	stage("Download Artifact") {
+	    steps {
+		script {
+		    env.TARGET_VERSION = params.BUILD_VERSION ?: "latest"
+		    echo "Testing Redis version: ${env.TARGET_VERSION}"
+		}
+		
+		sh '''
+		cd ${TEST_WORKSPACE}
+		
+		wget "http://192.168.79.134:8081/repository/redis-releases/redis/${TARGET_VERSION}/redis-${TARGET_VERSION}.tar.gz" \
+		    -O redis-${TARGET_VERSION}.tar.gz
+		    
+		wget "http://192.168.79.134:8081/repository/redis-releases/redis/${TARGET_VERSION}/redis-${TARGET_VERSION}.tar.gz.md5" \
+		    -O redis-${TARGET_VERSION}.tar.gz.md5
+		
+		md5sum -c redis-${TARGET_VERSION}.tar.gz.md5
+		'''
 	    }
 	}
 
